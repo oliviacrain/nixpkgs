@@ -33,10 +33,12 @@ let
     , jq
 
     , version
-    , hash
+    , phpSrc ? null
+    , hash ? null
     , extraPatches ? [ ]
     , packageOverrides ? (final: prev: { })
     , phpAttrsOverrides ? (attrs: { })
+    , pearInstallPhar ? (callPackage ./install-pear-nozlib-phar.nix { })
 
       # Sapi flags
     , cgiSupport ? true
@@ -192,6 +194,11 @@ let
 
       mkWithExtensions = prevArgs: prevExtensionFunctions: extensions:
         mkBuildEnv prevArgs prevExtensionFunctions { inherit extensions; };
+
+      defaultPhpSrc = fetchurl {
+        url = "https://www.php.net/distributions/php-${version}.tar.bz2";
+        inherit hash;
+      };
     in
     stdenv.mkDerivation (
       let
@@ -278,6 +285,10 @@ let
               substituteInPlace configure --replace "-lstdc++" "-lc++"
             '';
 
+          preInstall = ''
+            cp -f ${pearInstallPhar} ./pear/install-pear-nozlib.phar
+          '';
+
           postInstall = ''
             test -d $out/etc || mkdir $out/etc
             cp php.ini-production $out/etc/php.ini
@@ -291,10 +302,7 @@ let
                $dev/share/man/man1/
           '';
 
-          src = fetchurl {
-            url = "https://www.php.net/distributions/php-${version}.tar.bz2";
-            inherit hash;
-          };
+          src = if phpSrc == null then defaultPhpSrc else phpSrc;
 
           patches = [ ./fix-paths-php7.patch ] ++ extraPatches;
 
