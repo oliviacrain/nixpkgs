@@ -1,10 +1,12 @@
-{ lib
-, fetchFromGitHub
-, makeWrapper
-, rustPlatform
-, pkg-config
-, openssl
-, vale
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  makeWrapper,
+  rustPlatform,
+  pkg-config,
+  openssl,
+  vale,
 }:
 
 rustPlatform.buildRustPackage {
@@ -29,7 +31,7 @@ rustPlatform.buildRustPackage {
   # The following tests are reaching to the network.
   checkFlags = [
     "--skip=vale::tests"
-  ];
+  ] ++ lib.optionals (stdenv.isLinux && stdenv.isAarch64) [ "--skip=utils::tests::arch" ];
 
   env.OPENSSL_NO_VENDOR = true;
 
@@ -45,8 +47,10 @@ rustPlatform.buildRustPackage {
     homepage = "https://github.com/errata-ai/vale-ls";
     license = licenses.mit;
     mainProgram = "vale-ls";
-    maintainers = with maintainers; [ foo-dogsquared jansol ];
+    maintainers = with maintainers; [
+      foo-dogsquared
+      jansol
+    ];
     platforms = platforms.unix;
   };
 }
-
